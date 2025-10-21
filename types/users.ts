@@ -196,3 +196,22 @@ export type GetFilteredUsersStatsOpts = {
 export type AuthChangeResponse = {
   follow_link: string;
 };
+
+export type GetUsersParams = {
+  page?: number; // The page to select
+  per_page?: number; // Default value: 60 The number of users per page. There is a maximum limit of 200 users per page.
+  in_team?: string; // The ID of the team to get users for.
+  not_in_team?: string; // The ID of the team to exclude users for. Must not be used with "in_team" query parameter.
+  in_channel?: string; // The ID of the channel to get users for.
+  not_in_channel?: string; // The ID of the channel to exclude users for. Must be used with "in_channel" query parameter.
+  in_group?: string; // The ID of the group to get users for. Must have manage_system permission.
+  group_constrained?: boolean; // When used with not_in_channel or not_in_team, returns only the users that are allowed to join the channel or team based on its group constrains.
+  without_team?: boolean; // Whether or not to list users that are not on any team. This option takes precendence over in_team, in_channel, and not_in_channel.
+  active?: boolean; // Whether or not to list only users that are active. This option cannot be used along with the inactive option.
+  inactive?: boolean; // Whether or not to list only users that are deactivated. This option cannot be used along with the active option.
+  role?: string; // Returns users that have this role.
+  sort?: string; // Sort is only available in conjunction with certain options below. The paging parameter is also always available.
+  roles?: string; // Comma separated string used to filter users based on any of the specified system roles Example: ?roles=system_admin,system_user will return users that are either system admins or system users
+  channel_roles?: string; // Comma separated string used to filter users based on any of the specified channel roles, can only be used in conjunction with in_channel Example: ?in_channel=4eb6axxw7fg3je5iyasnfudc5y&channel_roles=channel_user will return users that are only channel users and not admins or guests
+  team_roles?: string; // Comma separated string used to filter users based on any of the specified team roles, can only be used in conjunction with in_team Example: ?in_team=4eb6axxw7fg3je5iyasnfudc5y&team_roles=team_user will return users that are only team users and not admins or guests
+};

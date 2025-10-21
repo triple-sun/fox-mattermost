@@ -166,6 +166,7 @@ import type {
   UserStatus,
   GetFilteredUsersStatsOpts,
   UserCustomStatus,
+  GetUsersParams,
 } from '../types/users';
 import type { DeepPartial, RelationOneToOne } from '../types/utilities';
 
@@ -1064,6 +1065,15 @@ export default class Client4 {
     return this.doFetch<UserProfile>(`${this.getUserRoute(userId)}`, {
       method: 'get',
     });
+  };
+
+  getUsers = (params: GetUsersParams = {}) => {
+    return this.doFetch<UserProfile[]>(
+      `${this.getUsersRoute()}${buildQueryString(params)}`,
+      {
+        method: 'get',
+      },
+    );
   };
 
   getUserByUsername = (username: string) => {
@@ -4977,15 +4987,15 @@ export class ClientError extends Error implements ServerError {
     super(
       err.message +
         ': ' +
-        cleanUrlForLogging(baseUrl, err.request.url || '') +
+        cleanUrlForLogging(baseUrl, err.request?.url || '') +
         {
           cause,
         },
     );
 
     this.message = err.message;
-    this.url = err.request.url;
-    this.server_error_id = err.request.server_error_id;
+    this.url = err.request?.url;
+    this.server_error_id = err.request?.server_error_id;
     this.status_code = err.status;
     this.stack = err.stack;
 

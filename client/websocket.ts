@@ -20,7 +20,7 @@ export type CloseListener = (connectFailCount: number) => void;
 
 export default class WebSocketClient {
   private conn: WebSocket | null;
-  private connectionUrl: string | null;
+  private url: string | null;
 
   // responseSequence is the number to track a response sent
   // via the websocket. A response will always have the same sequence number
@@ -67,17 +67,20 @@ export default class WebSocketClient {
   private connectionId: string | null;
   private postedAck: boolean;
 
+  private resetCount: boolean;
+
   private nestLogger?: typeof Logger;
 
   constructor(logger?: typeof Logger) {
     this.conn = null;
-    this.connectionUrl = null;
+    this.url = null;
     this.responseSequence = 1;
     this.serverSequence = 0;
     this.connectFailCount = 0;
     this.responseCallbacks = {};
     this.connectionId = '';
     this.postedAck = false;
+    this.resetCount = true;
 
     this.nestLogger = logger;
   }
@@ -86,36 +89,47 @@ export default class WebSocketClient {
   // on hello, get the connectionID and store it.
   // on reconnect, send cookie, connectionID, sequence number.
   initialize(
-    connectionUrl = this.connectionUrl,
-    token?: string,
-    postedAck?: boolean,
+    {
+      token,
+      postedAck,
+      resetCount,
+      url = this.url,
+    }: {
+      url?: string | null;
+      token?: string;
+      postedAck?: boolean;
+      /** Сброс счетчика при переподключении */
+      resetCount?: boolean;
+    } = { url: this.url },
   ) {
     if (this.conn) {
       return;
     }
 
-    if (connectionUrl == null) {
+    if (url == null) {
       (this.nestLogger ?? console).log('websocket must have connection url'); //eslint-disable-line no-console
       return;
     }
 
     if (this.connectFailCount === 0) {
-      (this.nestLogger ?? console).log(
-        'websocket connecting to ' + connectionUrl,
-      ); //eslint-disable-line no-console
+      (this.nestLogger ?? console).log('websocket connecting to ' + url); //eslint-disable-line no-console
     }
 
     if (typeof postedAck != 'undefined') {
       this.postedAck = postedAck;
     }
 
+    if (typeof resetCount != 'undefined') {
+      this.resetCount = resetCount;
+    }
+
     // Add connection id, and last_sequence_number to the query param.
     // We cannot use a cookie because it will bleed across tabs.
     // We cannot also send it as part of the auth_challenge, because the session cookie is already sent with the request.
     this.conn = new WebSocket(
-      `${connectionUrl}?connection_id=${this.connectionId}&sequence_number=${this.serverSequence}${this.postedAck ? '&posted_ack=true' : ''}`,
+      `${url}?connection_id=${this.connectionId}&sequence_number=${this.serverSequence}${this.postedAck ? '&posted_ack=true' : ''}`,
     );
-    this.connectionUrl = connectionUrl;
+    this.url = url;
 
     this.conn.onopen = () => {
       if (token) {
@@ -141,6 +155,11 @@ export default class WebSocketClient {
     this.conn.onclose = () => {
       this.conn = null;
       this.responseSequence = 1;
+
+      if (this.resetCount) {
+        this.serverSequence = 0;
+        this.connectionId = null;
+      }
 
       if (this.connectFailCount === 0) {
         (this.nestLogger ?? console).log('websocket closed'); //eslint-disable-line no-console
@@ -170,7 +189,7 @@ export default class WebSocketClient {
       retryTime += Math.random() * JITTER_RANGE;
 
       setTimeout(() => {
-        this.initialize(connectionUrl, token, postedAck);
+        this.initialize({ url, token, postedAck });
       }, retryTime);
     };
 

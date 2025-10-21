@@ -7,7 +7,7 @@ export function cleanUrlForLogging(baseUrl: string, apiUrl: string): string {
   let url = apiUrl;
 
   // Trim the host name
-  url = url.substring(baseUrl.length);
+  url = url.substring(baseUrl?.length);
 
   // Filter the query string
   const index = url.indexOf('?');
